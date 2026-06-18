@@ -1,0 +1,143 @@
+import React, { useState, useEffect, useRef } from 'react'
+
+// Google sign-in gate.
+// Production: VITE_GOOGLE_CLIENT_ID is set, so the app is shown only after a
+// successful sign-in with a @spindletap.com Google account.
+// Local dev: the var is unset, so the gate is skipped entirely.
+
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+const ALLOWED_DOMAIN = 'spindletap.com'
+const TOKEN_KEY = 'stb_id_token'
+
+// Decode a JWT payload for display only. The server independently verifies it.
+function decodeJwt(token) {
+  try {
+    const part = token.split('.')[1]
+    return JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')))
+  } catch {
+    return null
+  }
+}
+
+function domainOk(claims) {
+  if (!claims) return false
+  const email = String(claims.email || '').toLowerCase()
+  const domain = String(claims.hd || email.split('@')[1] || '').toLowerCase()
+  return domain === ALLOWED_DOMAIN
+}
+
+export function getToken() {
+  return sessionStorage.getItem(TOKEN_KEY) || ''
+}
+
+// Authorization header for API calls — empty when there is no token (local dev).
+export function authHeader() {
+  const t = getToken()
+  return t ? { Authorization: `Bearer ${t}` } : {}
+}
+
+export default function AuthGate({ children }) {
+  // No client id configured (local dev) — no gate.
+  if (!CLIENT_ID) return children
+  return <SignInFlow>{children}</SignInFlow>
+}
+
+function SignInFlow({ children }) {
+  const [state, setState] = useState(() => {
+    const token = getToken()
+    const claims = token ? decodeJwt(token) : null
+    if (claims && claims.exp * 1000 > Date.now() && domainOk(claims)) {
+      return { status: 'in' }
+    }
+    sessionStorage.removeItem(TOKEN_KEY)
+    return { status: 'out' }
+  })
+  const btnRef = useRef(null)
+
+  function handleCredential(resp) {
+    const token = resp && resp.credential
+    const claims = token ? decodeJwt(token) : null
+    if (!claims) {
+      setState({ status: 'error' })
+      return
+    }
+    if (!domainOk(claims)) {
+      setState({ status: 'denied', email: claims.email })
+      return
+    }
+    sessionStorage.setItem(TOKEN_KEY, token)
+    setState({ status: 'in' })
+  }
+
+  useEffect(() => {
+    if (state.status === 'in') return
+    let cancelled = false
+
+    function init() {
+      if (cancelled || !window.google?.accounts?.id) return
+      window.google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredential,
+        auto_select: true,
+      })
+      if (btnRef.current) {
+        window.google.accounts.id.renderButton(btnRef.current, {
+          theme: 'filled_blue',
+          size: 'large',
+          text: 'signin_with',
+          shape: 'pill',
+        })
+      }
+      // One Tap: returning staff with an active Google session sign in with no click.
+      window.google.accounts.id.prompt()
+    }
+
+    if (window.google?.accounts?.id) {
+      init()
+    } else {
+      const timer = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(timer)
+          init()
+        }
+      }, 120)
+      return () => {
+        cancelled = true
+        clearInterval(timer)
+      }
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [state.status])
+
+  if (state.status === 'in') return children
+
+  return (
+    <div className="signin-screen">
+      <div className="signin-card">
+        <img
+          src="/logo-mark.png"
+          alt="Spindletap Beverages"
+          className="signin-logo"
+        />
+        <h1>Master Calendar</h1>
+        {state.status === 'denied' ? (
+          <p className="signin-deny">
+            <strong>{state.email}</strong> is not a Spindletap account. Please
+            sign in with your @spindletap.com Google account.
+          </p>
+        ) : state.status === 'error' ? (
+          <p className="signin-deny">
+            Something went wrong signing in. Please try again.
+          </p>
+        ) : (
+          <p className="signin-msg">
+            Sign in with your Spindletap Google account to open the calendar.
+          </p>
+        )}
+        <div ref={btnRef} className="signin-btn" />
+      </div>
+    </div>
+  )
+}
