@@ -11,6 +11,9 @@ export default function Grid({
   ownerFilter,
   onCellClick,
   readOnly,
+  selectMode,
+  selected,
+  onToggleSelect,
 }) {
   const cats = ownerFilter
     ? categories.filter((c) => c.owner.id === ownerFilter)
@@ -86,6 +89,9 @@ export default function Grid({
                           !readOnly &&
                           state === 'blank' &&
                           attentionWeeks.has(w.key)
+                        const isSel =
+                          selectMode && selected && selected.has(`${cat.id}|${w.key}`)
+                        const selectable = selectMode && state === 'blank'
                         return (
                           <td
                             key={w.key}
@@ -95,15 +101,25 @@ export default function Grid({
                               'cell cell-' +
                               state +
                               (flagged ? ' cell-flag' : '') +
-                              (w.key === todayKey ? ' col-today' : '')
+                              (w.key === todayKey ? ' col-today' : '') +
+                              (isSel ? ' cell-selected' : '') +
+                              (selectMode && !selectable ? ' cell-locked' : '')
                             }
-                            onClick={() => onCellClick(cat, w)}
+                            onClick={() =>
+                              selectMode
+                                ? onToggleSelect(cat, w, state)
+                                : onCellClick(cat, w)
+                            }
                             title={
                               readOnly
                                 ? ''
-                                : flagged
-                                  ? 'Needs filling — click to add'
-                                  : 'Click to edit'
+                                : selectMode
+                                  ? selectable
+                                    ? 'Click to select / deselect'
+                                    : 'Only empty cells can be marked'
+                                  : flagged
+                                    ? 'Needs filling — click to add'
+                                    : 'Click to edit'
                             }
                           >
                             {state === 'filled' && (

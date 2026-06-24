@@ -52,6 +52,9 @@ export default function App() {
   const [ownerFilter, setOwnerFilter] = useState(null)
   const [from, setFrom] = useState(defaultFrom)
   const [to, setTo] = useState(defaultTo)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selected, setSelected] = useState(() => new Set()) // "catId|weekKey"
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   function load() {
     setConn({ state: 'loading' })
@@ -204,6 +207,60 @@ export default function App() {
     setAllEntries((a) => [...a, entry])
   }
 
+  // ---- Bulk "Nothing this week" -------------------------------------------
+  function enterSelect() {
+    setSelectMode(true)
+    setSelected(new Set())
+    setEditing(null)
+  }
+  function exitSelect() {
+    setSelectMode(false)
+    setSelected(new Set())
+  }
+  // Only empty (blank) cells can be selected.
+  function toggleSelect(category, week, state) {
+    if (state !== 'blank') return
+    const key = `${category.id}|${week.key}`
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
+  async function markNothingBulk() {
+    if (selected.size === 0) return
+    const payloads = []
+    for (const key of selected) {
+      const [catId, weekKey] = key.split('|')
+      const category = categories.find((c) => c.id === catId)
+      if (!category) continue
+      payloads.push({
+        category: category.label,
+        owner: category.owner.name,
+        date: weekKey,
+        headline: '',
+        details: '',
+        nothingThisWeek: true,
+      })
+    }
+    if (payloads.length === 0) return exitSelect()
+    setBulkBusy(true)
+    const res = await fetch('/api/save-bulk', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ entries: payloads }),
+    })
+      .then((r) => r.json())
+      .catch((err) => ({ ok: false, error: String(err) }))
+    setBulkBusy(false)
+    if (!res.ok) {
+      alert('Could not mark cells: ' + res.error)
+      return
+    }
+    setAllEntries((a) => [...a, ...res.entries])
+    exitSelect()
+  }
+
   const editingEntries = editing
     ? byCell[`${editing.category.id}|${editing.week.key}`] || []
     : []
@@ -220,6 +277,11 @@ export default function App() {
             ? 'Read-only · the week at a glance'
             : 'Interdepartmental planning · the week at a glance'}
         </span>
+        {!readOnly && !selectMode && (
+          <button className="manage-btn" onClick={enterSelect}>
+            Bulk fill
+          </button>
+        )}
         {isAdmin && !readOnly && (
           <button className="manage-btn" onClick={() => setManaging(true)}>
             Manage
@@ -267,7 +329,36 @@ export default function App() {
           ownerFilter={ownerFilter}
           onCellClick={openCell}
           readOnly={readOnly}
+          selectMode={selectMode}
+          selected={selected}
+          onToggleSelect={toggleSelect}
         />
+      )}
+      {selectMode && !readOnly && (
+        <div className="bulk-bar">
+          <span className="bulk-count">
+            {selected.size === 0
+              ? 'Click empty cells to select'
+              : `${selected.size} empty ${selected.size === 1 ? 'cell' : 'cells'} selected`}
+          </span>
+          <button
+            className="btn btn-save"
+            disabled={selected.size === 0 || bulkBusy}
+            onClick={markNothingBulk}
+          >
+            {bulkBusy ? 'Marking…' : 'Mark “Nothing this week”'}
+          </button>
+          <button
+            className="btn btn-ghost"
+            disabled={selected.size === 0 || bulkBusy}
+            onClick={() => setSelected(new Set())}
+          >
+            Clear
+          </button>
+          <button className="btn btn-cancel" disabled={bulkBusy} onClick={exitSelect}>
+            Done
+          </button>
+        </div>
       )}
       {editing && (
         <CellEditor

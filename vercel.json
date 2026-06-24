@@ -1,5 +1,6 @@
 {
   "functions": {
-    "api/manage.js": { "maxDuration": 60 }
+    "api/manage.js": { "maxDuration": 60 },
+    "api/save-bulk.js": { "maxDuration": 60 }
   }
 }
