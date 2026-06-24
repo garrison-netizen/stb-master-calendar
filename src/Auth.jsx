@@ -46,7 +46,7 @@ function SignInFlow({ children }) {
   const [state, setState] = useState(() => {
     const token = getToken()
     const claims = token ? decodeJwt(token) : null
-    if (claims && claims.exp * 1000 > Date.now() && domainOk(claims)) {
+    if (claims && claims.exp * 1000 > Date.now() && claims.email) {
       return { status: 'in' }
     }
     sessionStorage.removeItem(TOKEN_KEY)
@@ -57,14 +57,12 @@ function SignInFlow({ children }) {
   function handleCredential(resp) {
     const token = resp && resp.credential
     const claims = token ? decodeJwt(token) : null
-    if (!claims) {
+    if (!claims || !claims.email) {
       setState({ status: 'error' })
       return
     }
-    if (!domainOk(claims)) {
-      setState({ status: 'denied', email: claims.email })
-      return
-    }
+    // Any verified Google account may proceed; the server authorizes the
+    // specific account (Spindletap staff by domain, others via the allowlist).
     sessionStorage.setItem(TOKEN_KEY, token)
     setState({ status: 'in' })
   }
@@ -133,7 +131,7 @@ function SignInFlow({ children }) {
           </p>
         ) : (
           <p className="signin-msg">
-            Sign in with your Spindletap Google account to open the calendar.
+            Sign in with your authorized Google account to open the calendar.
           </p>
         )}
         <div ref={btnRef} className="signin-btn" />
