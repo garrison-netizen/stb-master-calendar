@@ -1,16 +1,20 @@
 // POST /api/save-bulk — creates many entries in one call. Used for bulk
 // "Nothing this week": one nothingThisWeek entry per selected empty cell.
 import { saveEntry } from '../lib/notionCore.js'
-import { requireAuth } from '../lib/auth.js'
+import { editGuard } from '../lib/auth.js'
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
 export default async function handler(req, res) {
   try {
-    await requireAuth(req)
+    const guard = await editGuard(req)
     const list = Array.isArray(req.body && req.body.entries) ? req.body.entries : []
     if (list.length > 120)
       throw new Error('Too many cells at once — select 120 or fewer.')
+    for (const p of list) {
+      if (!guard.canEdit(p && p.category))
+        throw new Error('You can only mark cells in your own categories.')
+    }
 
     const entries = []
     for (const payload of list) {

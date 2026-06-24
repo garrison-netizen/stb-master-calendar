@@ -11,6 +11,7 @@ export default function Grid({
   ownerFilter,
   onCellClick,
   readOnly,
+  canEditCat,
   selectMode,
   selected,
   onToggleSelect,
@@ -85,13 +86,16 @@ export default function Grid({
                             : list.some((e) => e.nothingThisWeek)
                               ? 'nothing'
                               : 'blank'
+                        const editable =
+                          !readOnly && (!canEditCat || canEditCat(cat))
                         const flagged =
-                          !readOnly &&
-                          state === 'blank' &&
-                          attentionWeeks.has(w.key)
+                          editable && state === 'blank' && attentionWeeks.has(w.key)
                         const isSel =
                           selectMode && selected && selected.has(`${cat.id}|${w.key}`)
-                        const selectable = selectMode && state === 'blank'
+                        const selectable =
+                          selectMode && editable && state === 'blank'
+                        const locked =
+                          !editable || (selectMode && state !== 'blank')
                         return (
                           <td
                             key={w.key}
@@ -103,15 +107,16 @@ export default function Grid({
                               (flagged ? ' cell-flag' : '') +
                               (w.key === todayKey ? ' col-today' : '') +
                               (isSel ? ' cell-selected' : '') +
-                              (selectMode && !selectable ? ' cell-locked' : '')
+                              (locked ? ' cell-locked' : '')
                             }
-                            onClick={() =>
-                              selectMode
-                                ? onToggleSelect(cat, w, state)
-                                : onCellClick(cat, w)
-                            }
+                            onClick={() => {
+                              if (!editable) return
+                              if (selectMode) {
+                                if (state === 'blank') onToggleSelect(cat, w, state)
+                              } else onCellClick(cat, w)
+                            }}
                             title={
-                              readOnly
+                              readOnly || !editable
                                 ? ''
                                 : selectMode
                                   ? selectable

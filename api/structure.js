@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     )
     // email is null in local dev (no gate) — treat that as an admin.
     const admin = email === null ? true : isAdmin(email)
-    res.status(200).json({ ok: true, ...structure, isAdmin: admin })
+    res.status(200).json({ ok: true, ...structure, isAdmin: admin, email: email || '' })
   } catch (err) {
     res.status(200).json({ ok: false, error: String(err.message || err) })
   }

@@ -47,6 +47,7 @@ export default function App() {
   const [allOwners, setAllOwners] = useState([])
   const [allCategories, setAllCategories] = useState([])
   const [isAdmin, setIsAdmin] = useState(false)
+  const [myEmail, setMyEmail] = useState('')
   const [managing, setManaging] = useState(false)
   const [editing, setEditing] = useState(null) // { category, week }
   const [ownerFilter, setOwnerFilter] = useState(null)
@@ -76,6 +77,7 @@ export default function App() {
         setAllOwners(s.owners)
         setAllCategories(s.categories)
         setIsAdmin(!!s.isAdmin)
+        setMyEmail((s.email || '').toLowerCase())
         setAllEntries(e.entries.filter((x) => x.date))
         setConn({ state: 'live', count: e.entries.length })
       })
@@ -115,6 +117,19 @@ export default function App() {
   }, [from, to])
 
   const isDefault = !ownerFilter && from === defaultFrom && to === defaultTo
+
+  // A cell is editable only by the category's owner (matched by email) or an
+  // admin. The server enforces this too; this just shapes the UI.
+  const canEditCat = (cat) =>
+    isAdmin || (!!cat.owner.email && cat.owner.email.toLowerCase() === myEmail)
+  const canEditAny = useMemo(
+    () =>
+      isAdmin ||
+      categories.some(
+        (c) => c.owner.email && c.owner.email.toLowerCase() === myEmail
+      ),
+    [isAdmin, categories, myEmail]
+  )
 
   function resetFilters() {
     setOwnerFilter(null)
@@ -277,7 +292,7 @@ export default function App() {
             ? 'Read-only · the week at a glance'
             : 'Interdepartmental planning · the week at a glance'}
         </span>
-        {!readOnly && !selectMode && (
+        {!readOnly && !selectMode && canEditAny && (
           <button className="manage-btn" onClick={enterSelect}>
             Bulk fill
           </button>
@@ -329,6 +344,7 @@ export default function App() {
           ownerFilter={ownerFilter}
           onCellClick={openCell}
           readOnly={readOnly}
+          canEditCat={canEditCat}
           selectMode={selectMode}
           selected={selected}
           onToggleSelect={toggleSelect}
