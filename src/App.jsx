@@ -118,17 +118,22 @@ export default function App() {
 
   const isDefault = !ownerFilter && from === defaultFrom && to === defaultTo
 
-  // A cell is editable only by the category's owner (matched by email) or an
-  // admin. The server enforces this too; this just shapes the UI.
-  const canEditCat = (cat) =>
-    isAdmin || (!!cat.owner.email && cat.owner.email.toLowerCase() === myEmail)
+  // Owner names this person may edit: their own + anyone they supervise.
+  // The server enforces this too; this just shapes the UI.
+  const myOwnerNames = useMemo(() => {
+    const set = new Set()
+    for (const o of allOwners) {
+      if (o.email && o.email.toLowerCase() === myEmail) {
+        set.add(o.name)
+        for (const s of o.supervises || []) set.add(s)
+      }
+    }
+    return set
+  }, [allOwners, myEmail])
+  const canEditCat = (cat) => isAdmin || myOwnerNames.has(cat.owner.name)
   const canEditAny = useMemo(
-    () =>
-      isAdmin ||
-      categories.some(
-        (c) => c.owner.email && c.owner.email.toLowerCase() === myEmail
-      ),
-    [isAdmin, categories, myEmail]
+    () => isAdmin || myOwnerNames.size > 0,
+    [isAdmin, myOwnerNames]
   )
 
   function resetFilters() {

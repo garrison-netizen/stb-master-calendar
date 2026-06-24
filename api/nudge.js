@@ -143,7 +143,7 @@ export default async function handler(req, res) {
     let summaryBody = ''
     for (const ownerName of ownersWithGaps) {
       const o = ownerByName[ownerName]
-      if (!o || !o.email) noEmail.push(ownerName)
+      if (!o || (!o.email && !o.notifyEmail)) noEmail.push(ownerName)
       summaryBody += `<h3 style="margin:14px 0 2px;color:#16243f">${ownerName}${
         o && o.email ? '' : ' (no email on file)'
       }</h3>${listHtml(ownerRows(ownerName))}`
@@ -189,13 +189,14 @@ export default async function handler(req, res) {
     if (PER_OWNER) {
       for (const ownerName of ownersWithGaps) {
         const o = ownerByName[ownerName]
-        if (!o || !o.email) continue
+        const to = o && (o.notifyEmail || o.email)
+        if (!to) continue
         const html = `<p>Hi ${ownerName.split(' ')[0] || 'there'} — a few Master Calendar cells in your area need filling for <strong>${windowLabel}</strong>. Add an entry, or mark "Nothing this week":</p>${listHtml(
           ownerRows(ownerName)
         )}<p style="color:#888;font-size:12px">Open the calendar: https://stb-master-calendar.vercel.app</p>`
         results.sent.push({
-          to: o.email,
-          ...(await sendEmail(o.email, 'Master Calendar — your cells need filling', html)),
+          to,
+          ...(await sendEmail(to, 'Master Calendar — your cells need filling', html)),
         })
       }
     }
