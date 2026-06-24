@@ -1,6 +1,8 @@
 {
   "functions": {
     "api/manage.js": { "maxDuration": 60 },
-    "api/save-bulk.js": { "maxDuration": 60 }
-  }
+    "api/save-bulk.js": { "maxDuration": 60 },
+    "api/nudge.js": { "maxDuration": 60 }
+  },
+  "crons": [{ "path": "/api/nudge", "schedule": "0 13 * * *" }]
 }
