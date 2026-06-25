@@ -5,7 +5,7 @@ import FilterBar from './FilterBar.jsx'
 import ManagePanel from './ManagePanel.jsx'
 import { resolveCategoryId } from './calendarConfig.js'
 import { mondayOf, keyOf, parseDate, addDays } from './dateUtils.js'
-import { authHeader } from './Auth.jsx'
+import { authHeader, currentEmail, signOut } from './Auth.jsx'
 
 export default function App() {
   const todayMonday = useMemo(() => mondayOf(new Date()), [])
@@ -320,18 +320,42 @@ export default function App() {
         isDefault={isDefault}
       />
       {conn.state === 'error' ? (
-        <div className="grid-state">
-          <div className="gs-card gs-error">
-            <div className="gs-title">Can't load the calendar</div>
-            <p className="gs-msg">
-              The calendar data service isn't responding right now. Try again in
-              a minute. If it keeps happening, let Garrison know.
-            </p>
-            <button className="btn btn-save" onClick={load}>
-              Try again
-            </button>
+        /sign[- ]?in|authoriz|verified|expired/i.test(conn.msg || '') ? (
+          // Access problem (wrong/unauthorized Google account) — show WHICH
+          // account is signed in and let them switch, instead of pretending
+          // the data service is down.
+          <div className="grid-state">
+            <div className="gs-card gs-error">
+              <div className="gs-title">This Google account isn't on the access list</div>
+              <p className="gs-msg">
+                {currentEmail() ? (
+                  <>
+                    You're signed in as <strong>{currentEmail()}</strong>.{' '}
+                  </>
+                ) : null}
+                Sign in with the Google account Garrison authorized. If that's a
+                different account, switch below — or contact Garrison to be added.
+              </p>
+              <button className="btn btn-save" onClick={signOut}>
+                Use a different account
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          // Genuine transient/data error.
+          <div className="grid-state">
+            <div className="gs-card gs-error">
+              <div className="gs-title">Can't load the calendar</div>
+              <p className="gs-msg">
+                The calendar is briefly unavailable. Try again in a minute. If it
+                keeps happening, let Garrison know.
+              </p>
+              <button className="btn btn-save" onClick={load}>
+                Try again
+              </button>
+            </div>
+          </div>
+        )
       ) : conn.state === 'loading' ? (
         <div className="grid-state">
           <div className="gs-card">

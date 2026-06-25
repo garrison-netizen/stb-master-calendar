@@ -30,6 +30,23 @@ export function getToken() {
   return sessionStorage.getItem(TOKEN_KEY) || ''
 }
 
+// The email of the currently signed-in Google account (for display).
+export function currentEmail() {
+  const claims = decodeJwt(getToken())
+  return claims && claims.email ? String(claims.email) : ''
+}
+
+// Drop the session and let the user pick a different Google account.
+export function signOut() {
+  sessionStorage.removeItem(TOKEN_KEY)
+  try {
+    window.google?.accounts?.id?.disableAutoSelect?.()
+  } catch {
+    /* no-op */
+  }
+  window.location.reload()
+}
+
 // Authorization header for API calls — empty when there is no token (local dev).
 export function authHeader() {
   const t = getToken()
@@ -76,7 +93,10 @@ function SignInFlow({ children }) {
       window.google.accounts.id.initialize({
         client_id: CLIENT_ID,
         callback: handleCredential,
-        auto_select: true,
+        // Don't silently reuse the browser's default Google account — that
+        // signed people in as the wrong account (a personal Gmail not on the
+        // list) with no way to choose. Make the account choice deliberate.
+        auto_select: false,
       })
       if (btnRef.current) {
         window.google.accounts.id.renderButton(btnRef.current, {
