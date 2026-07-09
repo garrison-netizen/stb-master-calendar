@@ -59,8 +59,6 @@ body {
   font-weight: 800;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  padding-bottom: 3px;
-  background: linear-gradient(var(--brass-500), var(--brass-500)) left bottom / 46px 3px no-repeat;
 }
 .topbar .tag { margin-left: auto; font-size: 12px; color: var(--navy-200); }
 .view-tag {
@@ -216,8 +214,8 @@ table.grid {
   left: 0;
   z-index: 4;
   background: var(--navy-900);
-  min-width: 234px;
-  width: 234px;
+  min-width: 292px;
+  width: 292px;
   border-right: 2px solid var(--navy-950);
   font-family: var(--font-display);
   font-size: 10px;
@@ -261,8 +259,8 @@ table.grid {
   left: 0;
   z-index: 2;
   background: #fff;
-  min-width: 234px;
-  width: 234px;
+  min-width: 292px;
+  width: 292px;
   border-right: 2px solid #d9dce4;
   border-bottom: 1px solid var(--line);
   border-left: 5px solid #ccc;
@@ -283,7 +281,7 @@ table.grid {
   vertical-align: middle;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
-.cat-name { font-size: 13px; font-weight: 600; vertical-align: middle; }
+.cat-name { font-size: 13px; font-weight: 600; vertical-align: middle; line-height: 1.25; }
 .cat-name em {
   display: block;
   font-style: normal;
