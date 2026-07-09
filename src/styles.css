@@ -35,14 +35,14 @@ body {
 /* ---- Top bar ---- */
 .topbar {
   flex: none;
-  background: var(--navy-900);
+  background: linear-gradient(180deg, var(--navy-800), var(--navy-900));
   color: #fff;
-  padding: 10px 22px;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
   border-bottom: 3px solid var(--brass-500);
-  box-shadow: 0 2px 10px rgba(16, 26, 46, 0.28);
+  box-shadow: 0 2px 14px rgba(16, 26, 46, 0.35);
   z-index: 5;
 }
 .topbar .brand {
@@ -52,13 +52,15 @@ body {
   font-weight: 700;
   color: var(--brass-400);
 }
-.brand-logo { height: 46px; width: auto; display: block; }
+.brand-logo { height: 54px; width: auto; display: block; }
 .topbar h1 {
   font-family: var(--font-display);
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  padding-bottom: 3px;
+  background: linear-gradient(var(--brass-500), var(--brass-500)) left bottom / 46px 3px no-repeat;
 }
 .topbar .tag { margin-left: auto; font-size: 12px; color: var(--navy-200); }
 .view-tag {
@@ -84,9 +86,10 @@ body {
 /* ---- Filter bar ---- */
 .filterbar {
   flex: none;
-  background: #faf8f3;
+  background: #fff;
   border-bottom: 1px solid #e6e2d8;
-  padding: 8px 18px;
+  box-shadow: 0 2px 8px rgba(22, 36, 63, 0.06);
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   gap: 26px;
@@ -104,9 +107,9 @@ body {
 }
 .chip {
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
-  padding: 4px 11px;
+  padding: 5px 13px;
   border-radius: 999px;
   border: 1px solid #d5d0c4;
   background: #fff;
@@ -177,7 +180,7 @@ body {
 table.grid {
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 12px;
+  font-size: 12.5px;
 }
 
 /* ---- Header row (weeks) ---- */
@@ -187,20 +190,27 @@ table.grid {
   z-index: 3;
   background: var(--navy-800);
   color: #fff;
-  border-right: 1px solid #17264400;
-  border-right-color: rgba(16, 26, 46, 0.55);
+  border-right: 1px solid rgba(16, 26, 46, 0.55);
   border-bottom: 2px solid var(--navy-950);
-  padding: 7px 9px;
-  min-width: 162px;
-  width: 162px;
+  padding: 9px 10px;
+  min-width: 168px;
+  width: 168px;
   font-weight: 500;
   text-align: left;
   vertical-align: middle;
 }
-.grid thead th.wk-today { background: var(--brass-600); }
-.wk-date { font-size: 12.5px; font-weight: 600; }
-.wk-year { font-size: 10px; color: var(--navy-200); margin-top: 1px; }
-.wk-today .wk-year { color: var(--brass-100); font-weight: 600; }
+.grid thead th.wk-today {
+  background: linear-gradient(180deg, var(--brass-500), var(--brass-600));
+}
+.wk-date { font-size: 13px; font-weight: 700; }
+.wk-year { font-size: 10px; color: var(--navy-200); margin-top: 2px; }
+.wk-today .wk-date { color: var(--navy-950); }
+.wk-today .wk-year {
+  color: var(--navy-900);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
 
 .grid thead th.corner {
   left: 0;
@@ -230,18 +240,19 @@ table.grid {
 .band td {
   padding: 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.08));
 }
 .band-label {
   position: sticky;
   left: 0;
   display: inline-block;
-  padding: 5px 14px;
+  padding: 7px 14px;
   font-family: var(--font-display);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
   color: #fff;
-  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
 }
 
 /* ---- Category rows ---- */
@@ -261,24 +272,25 @@ table.grid {
 }
 .owner-chip {
   display: inline-block;
-  min-width: 27px;
+  min-width: 30px;
   text-align: center;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 700;
   color: #fff;
-  padding: 3px 5px;
-  border-radius: 4px;
+  padding: 4px 6px;
+  border-radius: 6px;
   margin-right: 9px;
   vertical-align: middle;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
 }
-.cat-name { font-size: 12px; font-weight: 600; vertical-align: middle; }
+.cat-name { font-size: 13px; font-weight: 600; vertical-align: middle; }
 .cat-name em {
   display: block;
   font-style: normal;
   font-weight: 400;
-  font-size: 10px;
+  font-size: 10.5px;
   color: var(--muted);
-  margin-left: 36px;
+  margin-left: 39px;
   margin-top: 1px;
 }
 
@@ -287,10 +299,10 @@ table.grid {
   position: relative;
   border-right: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
-  min-width: 162px;
-  width: 162px;
-  height: 48px;
-  padding: 5px 6px;
+  min-width: 168px;
+  width: 168px;
+  height: 54px;
+  padding: 6px 7px;
   vertical-align: top;
   color: #2a3340;
   cursor: pointer;
@@ -298,11 +310,15 @@ table.grid {
 .cell-blank { background: #f8f7f3; }
 .cell-filled { background: #ffffff; }
 .cell-nothing { background: #f1f0eb; text-align: center; }
-.cell.col-today { background: #fbf4e4; }
+.cell.col-today {
+  background: #fbf4e4;
+  box-shadow: inset 2px 0 0 var(--brass-300), inset -2px 0 0 var(--brass-300);
+}
 .cell-blank.col-today { background: #f7edd6; }
 .cell-blank:hover { background: #edeae1; }
 .cell-nothing:hover { background: #eae8e1; }
 .cell-filled:hover { box-shadow: inset 0 0 0 2px var(--brass-400); }
+.cell-filled.col-today:hover { box-shadow: inset 0 0 0 2px var(--brass-400); }
 
 /* near-term blank cells that need filling */
 .cell-flag { background: #fdf3dc; }
@@ -326,10 +342,16 @@ table.grid {
 .grid-ro .cell-filled:hover { box-shadow: none; }
 
 .cell-entries { display: flex; flex-direction: column; gap: 4px; }
-.cell-entry { border-left: 2px solid var(--brass-300); padding-left: 6px; }
+.cell-entry {
+  background: #faf8f3;
+  border: 1px solid #ede8db;
+  border-left: 3px solid var(--brass-400);
+  border-radius: 6px;
+  padding: 3px 6px 4px;
+}
 .ce-date {
   display: block;
-  font-size: 9px;
+  font-size: 9.5px;
   font-weight: 700;
   letter-spacing: 0.3px;
   text-transform: uppercase;
@@ -341,7 +363,7 @@ table.grid {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #1f2733;
   line-height: 1.32;
