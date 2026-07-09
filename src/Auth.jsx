@@ -155,6 +155,7 @@ function SignInFlow({ children }) {
           </p>
         )}
         <div ref={btnRef} className="signin-btn" />
+        <p className="signin-foot">Spindletap Beverages · Internal planning tool</p>
       </div>
     </div>
   )
