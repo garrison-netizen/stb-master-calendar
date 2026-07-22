@@ -53,6 +53,27 @@ export function authHeader() {
   return t ? { Authorization: `Bearer ${t}` } : {}
 }
 
+// Single sign-on intake: the STB Console passes its verified Google token in
+// the URL fragment (#sso=...) when opening this app, so staff aren't asked to
+// sign in twice. The token shares this app's OAuth client, so the server-side
+// verification path is unchanged; we only seed sessionStorage and strip the
+// fragment. Expired/garbage tokens fall through to the normal sign-in.
+function adoptSsoToken() {
+  const m = /[#&]sso=([^&]+)/.exec(window.location.hash || '')
+  if (!m) return
+  try {
+    const token = decodeURIComponent(m[1])
+    const claims = decodeJwt(token)
+    if (claims && claims.email && claims.exp * 1000 > Date.now()) {
+      sessionStorage.setItem(TOKEN_KEY, token)
+    }
+  } catch {
+    /* fall through to normal sign-in */
+  }
+  history.replaceState(null, '', window.location.pathname + window.location.search)
+}
+adoptSsoToken()
+
 export default function AuthGate({ children }) {
   // No client id configured (local dev) — no gate.
   if (!CLIENT_ID) return children

@@ -6,3 +6,6 @@ dist
 
 .vercel
 .env*
+
+# Per-session repo claim (multi-session protocol)
+.session-lock.json
