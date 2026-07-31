@@ -8,6 +8,10 @@
   --navy-200: #c3cfe3;
   --navy-100: #e2e8f2;
   --navy-50: #eef1f7;
+  /* The only brass safe for TEXT: 5.88:1 on white, 4.92:1 on brass-100.
+     600 and 500 are marks-and-rules only (3.51 and 2.10) — see
+     stb-consumers/design-system/stb-tokens.css */
+  --brass-700: #7d6027;
   --brass-600: #a98338;
   --brass-500: #c9a35c;
   --brass-400: #d4b171;
@@ -126,7 +130,7 @@ body {
 }
 .chip:hover { border-color: var(--brass-500); }
 .chip-on { background: var(--navy-900); border-color: var(--navy-900); color: #fff; }
-.chip-reset { border-style: dashed; border-color: var(--brass-500); color: var(--brass-600); }
+.chip-reset { border-style: dashed; border-color: var(--brass-500); color: var(--brass-700); }
 .filter-dash { color: var(--muted); font-size: 12px; }
 .filterbar input[type="date"] {
   font: inherit;
@@ -364,14 +368,14 @@ table.grid {
   text-transform: uppercase;
   color: #97a0ad;
 }
-.ce-time { color: var(--brass-600); }
+.ce-time { color: var(--brass-700); }
 /* One entry spanning multiple weeks — doubled edge + brass range label so it
    reads as the same item continuing across columns. */
 .cell-entry.ce-multiweek {
   border-left-style: double;
   border-left-width: 5px;
 }
-.ce-span { color: var(--brass-600); }
+.ce-span { color: var(--brass-700); }
 
 /* ---- Brewery vs Coffee ---------------------------------------------------
    The two businesses share this calendar, so an entry must be attributable at
@@ -418,7 +422,7 @@ table.grid {
 .biz-opt:hover { border-color: #c9c4b8; }
 .biz-opt-brewery.is-on {
   background: var(--brass-100);
-  border-color: var(--brass-600);
+  border-color: var(--brass-700);
   color: #7a5c1d;
 }
 .biz-opt-coffee.is-on {
@@ -430,7 +434,7 @@ table.grid {
 /* Business chips in the filter bar */
 .chip-biz-brewery.chip-on {
   background: var(--brass-600);
-  border-color: var(--brass-600);
+  border-color: var(--brass-700);
   color: #fff;
 }
 .chip-biz-coffee.chip-on {
@@ -529,7 +533,7 @@ table.grid {
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--brass-600);
+  color: var(--brass-700);
   margin-top: 1px;
 }
 .ei-btn {
