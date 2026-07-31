@@ -76,3 +76,27 @@ export function timeOf(iso) {
   const s = String(iso || '')
   return s.length > 10 ? s.slice(11, 16) : ''
 }
+
+// The "YYYY-MM-DD" part of a Notion date value.
+export function datePart(iso) {
+  return String(iso || '').slice(0, 10)
+}
+
+// An entry whose date range ends on a LATER DAY than it starts (a same-day
+// timed window like 18:00–21:00 is not a span).
+export function isSpan(entry) {
+  const start = datePart(entry.date)
+  const end = datePart(entry.dateEnd)
+  return !!start && !!end && end > start
+}
+
+// "Aug 3 – 21" within a month, "Jul 28 – Aug 21" across months.
+export function fmtSpan(startIso, endIso) {
+  const a = parseDate(startIso)
+  const b = parseDate(endIso)
+  const m1 = a.toLocaleDateString('en-US', { month: 'short' })
+  const m2 = b.toLocaleDateString('en-US', { month: 'short' })
+  return m1 === m2
+    ? `${m1} ${a.getDate()} – ${b.getDate()}`
+    : `${m1} ${a.getDate()} – ${m2} ${b.getDate()}`
+}

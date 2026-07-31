@@ -2,10 +2,13 @@ import React, { useState } from 'react'
 import {
   fmtLongDate,
   fmtDay,
+  fmtSpan,
   fmtTimeRange,
   timeOf,
   addDays,
   keyOf,
+  datePart,
+  isSpan,
 } from './dateUtils.js'
 
 export default function CellEditor({
@@ -26,6 +29,7 @@ export default function CellEditor({
   const blankForm = {
     id: null,
     date: minDate,
+    dateEnd: '',
     startTime: '',
     endTime: '',
     headline: '',
@@ -34,10 +38,14 @@ export default function CellEditor({
   const [form, setForm] = useState(blankForm)
   const [busy, setBusy] = useState(false)
 
+  // A "through" date makes this one entry cover every week up to that date.
+  const spanning = !!form.dateEnd
+
   function editEntry(e) {
     setForm({
       id: e.id,
       date: (e.date || minDate).slice(0, 10),
+      dateEnd: isSpan(e) ? datePart(e.dateEnd) : '',
       startTime: timeOf(e.date),
       endTime: timeOf(e.dateEnd),
       headline: e.headline || '',
@@ -50,8 +58,9 @@ export default function CellEditor({
     setBusy(true)
     const payload = {
       date: form.date,
-      startTime: form.startTime,
-      endTime: form.startTime ? form.endTime : '',
+      dateEnd: form.dateEnd && form.dateEnd > form.date ? form.dateEnd : '',
+      startTime: spanning ? '' : form.startTime,
+      endTime: !spanning && form.startTime ? form.endTime : '',
       headline: form.headline.trim(),
       details: form.details.trim(),
     }
@@ -102,7 +111,9 @@ export default function CellEditor({
                 key={e.id}
                 className={'entry-item' + (form.id === e.id ? ' editing' : '')}
               >
-                <span className="ei-date">{fmtDay(e.date)}</span>
+                <span className="ei-date">
+                  {isSpan(e) ? fmtSpan(e.date, e.dateEnd) : fmtDay(e.date)}
+                </span>
                 <span className="ei-text">
                   <span className="ei-headline">{e.headline}</span>
                   {timeOf(e.date) && (
@@ -141,41 +152,63 @@ export default function CellEditor({
             <input
               type="date"
               value={form.date}
-              min={minDate}
-              max={maxDate}
+              min={form.id ? undefined : minDate}
+              max={form.id ? undefined : maxDate}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
             />
           </label>
           <label className="fld">
             <span>
-              Time <em>(optional — leave blank for an all-day item)</em>
+              Runs through{' '}
+              <em>(optional — one entry can cover several weeks)</em>
             </span>
-            <div className="time-row">
-              <input
-                type="time"
-                value={form.startTime}
-                onChange={(e) =>
-                  setForm((f) => ({
-                    ...f,
-                    startTime: e.target.value,
-                    endTime: e.target.value ? f.endTime : '',
-                  }))
-                }
-              />
-              <span className="time-dash">to</span>
-              <input
-                type="time"
-                value={form.endTime}
-                disabled={!form.startTime}
-                title={
-                  form.startTime ? '' : 'Set a start time first'
-                }
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, endTime: e.target.value }))
-                }
-              />
-            </div>
+            <input
+              type="date"
+              value={form.dateEnd}
+              min={form.date}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  dateEnd: e.target.value,
+                  // A multi-week entry is all-day; times don't apply.
+                  startTime: e.target.value ? '' : f.startTime,
+                  endTime: e.target.value ? '' : f.endTime,
+                }))
+              }
+            />
           </label>
+          {!spanning && (
+            <label className="fld">
+              <span>
+                Time <em>(optional — leave blank for an all-day item)</em>
+              </span>
+              <div className="time-row">
+                <input
+                  type="time"
+                  value={form.startTime}
+                  onChange={(e) =>
+                    setForm((f) => ({
+                      ...f,
+                      startTime: e.target.value,
+                      endTime: e.target.value ? f.endTime : '',
+                    }))
+                  }
+                />
+                <span className="time-dash">to</span>
+                <input
+                  type="time"
+                  value={form.endTime}
+                  disabled={!form.startTime}
+                  title={
+                    form.startTime ? '' : 'Set a start time first'
+                  }
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, endTime: e.target.value }))
+                  }
+                />
+              </div>
+            </label>
+          )}
           <label className="fld">
             <span>Headline</span>
             <input

@@ -107,12 +107,21 @@ export default async function handler(req, res) {
       m = addDays(m, 7)
     }
 
-    // Any entry (content OR "nothing this week") counts as addressed.
+    // Any entry (content OR "nothing this week") counts as addressed. A
+    // multi-week entry (date range ending in a later week) covers every week
+    // it touches, matching how the grid renders it.
     const covered = new Set()
     for (const e of entries) {
       if (!e.date) continue
-      const wk = keyOf(mondayOfUTC(new Date(e.date.slice(0, 10) + 'T00:00:00Z')))
-      covered.add(`${e.category}|${wk}`)
+      const startDay = e.date.slice(0, 10)
+      const endDay = String(e.dateEnd || '').slice(0, 10)
+      let wk = mondayOfUTC(new Date(startDay + 'T00:00:00Z'))
+      const last =
+        endDay > startDay ? mondayOfUTC(new Date(endDay + 'T00:00:00Z')) : wk
+      for (let i = 0; i < 60 && wk <= last; i++) {
+        covered.add(`${e.category}|${keyOf(wk)}`)
+        wk = addDays(wk, 7)
+      }
     }
 
     // Gaps per owner.

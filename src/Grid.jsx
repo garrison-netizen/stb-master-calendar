@@ -1,6 +1,6 @@
 import React from 'react'
 import { SECTIONS } from './calendarConfig.js'
-import { fmtRange, fmtDay, fmtTime, timeOf } from './dateUtils.js'
+import { fmtRange, fmtDay, fmtSpan, fmtTime, timeOf, isSpan } from './dateUtils.js'
 
 export default function Grid({
   weeks,
@@ -130,13 +130,26 @@ export default function Grid({
                             {state === 'filled' && (
                               <div className="cell-entries">
                                 {content.map((e) => (
-                                  <div key={e.id} className="cell-entry">
+                                  <div
+                                    key={e.id}
+                                    className={
+                                      'cell-entry' + (isSpan(e) ? ' ce-multiweek' : '')
+                                    }
+                                  >
                                     <span className="ce-date">
-                                      {fmtDay(e.date)}
-                                      {timeOf(e.date) && (
-                                        <span className="ce-time">
-                                          {' · ' + fmtTime(timeOf(e.date))}
+                                      {isSpan(e) ? (
+                                        <span className="ce-span">
+                                          {fmtSpan(e.date, e.dateEnd)}
                                         </span>
+                                      ) : (
+                                        <>
+                                          {fmtDay(e.date)}
+                                          {timeOf(e.date) && (
+                                            <span className="ce-time">
+                                              {' · ' + fmtTime(timeOf(e.date))}
+                                            </span>
+                                          )}
+                                        </>
                                       )}
                                     </span>
                                     <span className="ce-headline">

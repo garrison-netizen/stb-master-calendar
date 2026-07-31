@@ -4,7 +4,14 @@ import CellEditor from './CellEditor.jsx'
 import FilterBar from './FilterBar.jsx'
 import ManagePanel from './ManagePanel.jsx'
 import { resolveCategoryId } from './calendarConfig.js'
-import { mondayOf, keyOf, parseDate, addDays } from './dateUtils.js'
+import {
+  mondayOf,
+  keyOf,
+  parseDate,
+  addDays,
+  datePart,
+  isSpan,
+} from './dateUtils.js'
 import { authHeader, currentEmail, signOut } from './Auth.jsx'
 
 export default function App() {
@@ -88,14 +95,17 @@ export default function App() {
   }, [])
 
   // Group entries into cells: { "categoryId|weekMondayKey": [entry, ...] }
+  // A multi-week entry (date range ending in a later week) lands in EVERY week
+  // it covers — one entry, shown and edited across all of them.
   const byCell = useMemo(() => {
     const map = {}
     for (const e of allEntries) {
       const catId = resolveCategoryId(e.category, categories)
       if (!catId || !e.date) continue
-      const wk = keyOf(mondayOf(parseDate(e.date)))
-      const k = `${catId}|${wk}`
-      ;(map[k] || (map[k] = [])).push(e)
+      for (const wk of entryWeekKeys(e)) {
+        const k = `${catId}|${wk}`
+        ;(map[k] || (map[k] = [])).push(e)
+      }
     }
     for (const k in map) {
       map[k].sort((a, b) => String(a.date).localeCompare(String(b.date)))
@@ -168,14 +178,25 @@ export default function App() {
     })
   }
 
-  async function addEntry({ date, startTime, endTime, headline, details }) {
-    const { category, week } = editing
-    const cellKey = `${category.id}|${week.key}`
-    const marker = (byCell[cellKey] || []).find((e) => e.nothingThisWeek)
+  // "Nothing this week" markers sitting in any week a saved entry now covers
+  // are stale — drop them (a multi-week entry can sweep several at once).
+  function coveredMarkers(entry, catId) {
+    const markers = []
+    for (const wk of entryWeekKeys(entry)) {
+      for (const e of byCell[`${catId}|${wk}`] || []) {
+        if (e.nothingThisWeek && e.id !== entry.id) markers.push(e)
+      }
+    }
+    return markers
+  }
+
+  async function addEntry({ date, dateEnd, startTime, endTime, headline, details }) {
+    const { category } = editing
     const entry = await apiSave({
       category: category.label,
       owner: category.owner.name,
       date,
+      dateEnd,
       startTime,
       endTime,
       headline,
@@ -183,21 +204,26 @@ export default function App() {
       nothingThisWeek: false,
     })
     if (!entry) return
+    const markers = coveredMarkers(entry, category.id)
     setAllEntries((a) => {
       let next = [...a, entry]
-      if (marker) next = next.filter((e) => e.id !== marker.id)
+      if (markers.length) {
+        const gone = new Set(markers.map((m) => m.id))
+        next = next.filter((e) => !gone.has(e.id))
+      }
       return next
     })
-    if (marker) apiClear(marker.id)
+    for (const m of markers) apiClear(m.id)
   }
 
-  async function updateEntry(id, { date, startTime, endTime, headline, details }) {
+  async function updateEntry(id, { date, dateEnd, startTime, endTime, headline, details }) {
     const { category } = editing
     const entry = await apiSave({
       id,
       category: category.label,
       owner: category.owner.name,
       date,
+      dateEnd,
       startTime,
       endTime,
       headline,
@@ -205,7 +231,16 @@ export default function App() {
       nothingThisWeek: false,
     })
     if (!entry) return
-    setAllEntries((a) => a.map((e) => (e.id === id ? entry : e)))
+    const markers = coveredMarkers(entry, category.id)
+    setAllEntries((a) => {
+      let next = a.map((e) => (e.id === id ? entry : e))
+      if (markers.length) {
+        const gone = new Set(markers.map((m) => m.id))
+        next = next.filter((e) => !gone.has(e.id))
+      }
+      return next
+    })
+    for (const m of markers) apiClear(m.id)
   }
 
   async function deleteEntry(id) {
@@ -429,6 +464,22 @@ export default function App() {
       )}
     </div>
   )
+}
+
+// Every week-Monday key an entry touches: one for a normal entry, several for
+// a multi-week span. Capped so a bad date range can't loop forever.
+function entryWeekKeys(e) {
+  const start = mondayOf(parseDate(e.date))
+  const keys = [keyOf(start)]
+  if (isSpan(e)) {
+    const last = mondayOf(parseDate(datePart(e.dateEnd)))
+    let d = addDays(start, 7)
+    for (let i = 0; i < 130 && d <= last; i++) {
+      keys.push(keyOf(d))
+      d = addDays(d, 7)
+    }
+  }
+  return keys
 }
 
 function Brand() {

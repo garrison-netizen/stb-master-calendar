@@ -356,6 +356,13 @@ table.grid {
   color: #97a0ad;
 }
 .ce-time { color: var(--brass-600); }
+/* One entry spanning multiple weeks — doubled edge + brass range label so it
+   reads as the same item continuing across columns. */
+.cell-entry.ce-multiweek {
+  border-left-style: double;
+  border-left-width: 5px;
+}
+.ce-span { color: var(--brass-600); }
 .ce-headline {
   display: -webkit-box;
   -webkit-line-clamp: 3;
