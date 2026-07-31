@@ -60,12 +60,26 @@ function mockEntries() {
     x.setDate(x.getDate() + w * 7 + d)
     return isoDay(x)
   }
-  const e = (category, date, headline, details = '', time = '') => ({
+  const e = (category, date, headline, details = '', time = '', business = 'Brewery') => ({
     id: 'mock_' + Math.random().toString(36).slice(2, 9),
     category,
     date: time ? date + 'T' + time + ':00.000-05:00' : date,
     headline,
     details,
+    business,
+    nothingThisWeek: false,
+  })
+  const coffee = (category, date, headline, details = '', time = '') =>
+    e(category, date, headline, details, time, 'Coffee')
+  // An all-day multi-week run: one entry, several columns.
+  const span = (category, date, endDate, headline, business = 'Brewery') => ({
+    id: 'mock_' + Math.random().toString(36).slice(2, 9),
+    category,
+    date,
+    dateEnd: endDate,
+    headline,
+    details: '',
+    business,
     nothingThisWeek: false,
   })
   const nothing = (category, w) => ({
@@ -77,6 +91,10 @@ function mockEntries() {
     nothingThisWeek: true,
   })
   return [
+    span('Campaign', wk(0), wk(3, 4), 'Summer Series — full run'),
+    coffee('Campaign', wk(1), 'Cold brew season push', 'Coffee-side creative'),
+    coffee('Email', wk(1, 3), 'Roaster newsletter: new single origin'),
+    span('Seasonal', wk(1), wk(5), 'Pumpkin program in market', 'Coffee'),
     e('Campaign', wk(0), 'Summer Series launch week', 'Hero creative live across channels'),
     e('Campaign', wk(2, 2), 'Mid-summer push', ''),
     e('Primary Messaging', wk(0), '“Brewed for Texas heat”'),

@@ -32,6 +32,7 @@ export default function CellEditor({
     dateEnd: '',
     startTime: '',
     endTime: '',
+    business: 'Brewery',
     headline: '',
     details: '',
   }
@@ -48,6 +49,7 @@ export default function CellEditor({
       dateEnd: isSpan(e) ? datePart(e.dateEnd) : '',
       startTime: timeOf(e.date),
       endTime: timeOf(e.dateEnd),
+      business: e.business || 'Brewery',
       headline: e.headline || '',
       details: e.details || '',
     })
@@ -61,6 +63,7 @@ export default function CellEditor({
       dateEnd: form.dateEnd && form.dateEnd > form.date ? form.dateEnd : '',
       startTime: spanning ? '' : form.startTime,
       endTime: !spanning && form.startTime ? form.endTime : '',
+      business: form.business,
       headline: form.headline.trim(),
       details: form.details.trim(),
     }
@@ -115,7 +118,14 @@ export default function CellEditor({
                   {isSpan(e) ? fmtSpan(e.date, e.dateEnd) : fmtDay(e.date)}
                 </span>
                 <span className="ei-text">
-                  <span className="ei-headline">{e.headline}</span>
+                  <span className="ei-headline">
+                    {e.business && (
+                      <span className={'biz-tag biz-' + e.business.toLowerCase()}>
+                        {e.business}
+                      </span>
+                    )}
+                    {e.headline}
+                  </span>
                   {timeOf(e.date) && (
                     <span className="ei-time">
                       {fmtTimeRange(timeOf(e.date), timeOf(e.dateEnd))}
@@ -146,6 +156,26 @@ export default function CellEditor({
         <div className="entry-form">
           <div className="section-label">
             {form.id ? 'Edit entry' : 'Add an entry'}
+          </div>
+          <div className="fld">
+            <span>Business</span>
+            <div className="biz-toggle">
+              {['Brewery', 'Coffee'].map((b) => (
+                <button
+                  key={b}
+                  type="button"
+                  className={
+                    'biz-opt biz-opt-' +
+                    b.toLowerCase() +
+                    (form.business === b ? ' is-on' : '')
+                  }
+                  aria-pressed={form.business === b}
+                  onClick={() => setForm((f) => ({ ...f, business: b }))}
+                >
+                  {b}
+                </button>
+              ))}
+            </div>
           </div>
           <label className="fld">
             <span>Date</span>

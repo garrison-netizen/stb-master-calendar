@@ -4,6 +4,8 @@ export default function FilterBar({
   owners,
   ownerFilter,
   setOwnerFilter,
+  businessFilter,
+  setBusinessFilter,
   from,
   to,
   setFrom,
@@ -13,6 +15,29 @@ export default function FilterBar({
 }) {
   return (
     <div className="filterbar">
+      <div className="filter-group">
+        <span className="filter-label">Business</span>
+        <button
+          className={'chip' + (!businessFilter ? ' chip-on' : '')}
+          onClick={() => setBusinessFilter(null)}
+        >
+          Both
+        </button>
+        {['Brewery', 'Coffee'].map((b) => (
+          <button
+            key={b}
+            className={
+              'chip chip-biz chip-biz-' +
+              b.toLowerCase() +
+              (businessFilter === b ? ' chip-on' : '')
+            }
+            onClick={() => setBusinessFilter(b)}
+          >
+            {b}
+          </button>
+        ))}
+      </div>
+
       <div className="filter-group">
         <span className="filter-label">Owner</span>
         <button

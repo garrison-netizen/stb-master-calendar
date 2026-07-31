@@ -133,7 +133,11 @@ export default function Grid({
                                   <div
                                     key={e.id}
                                     className={
-                                      'cell-entry' + (isSpan(e) ? ' ce-multiweek' : '')
+                                      'cell-entry' +
+                                      (isSpan(e) ? ' ce-multiweek' : '') +
+                                      (e.business
+                                        ? ' ce-biz-' + e.business.toLowerCase()
+                                        : '')
                                     }
                                   >
                                     <span className="ce-date">
@@ -153,6 +157,16 @@ export default function Grid({
                                       )}
                                     </span>
                                     <span className="ce-headline">
+                                      {e.business && (
+                                        <span
+                                          className={
+                                            'biz-tag biz-' +
+                                            e.business.toLowerCase()
+                                          }
+                                        >
+                                          {e.business}
+                                        </span>
+                                      )}
                                       {e.headline}
                                     </span>
                                   </div>

@@ -14,6 +14,12 @@
   --brass-300: #e3cb9d;
   --brass-100: #f4ead6;
   --cream: #f4f1ea;
+  /* Coffee side of the house — espresso browns, deliberately outside the
+     brewery's brass range so the two never read as the same thing. */
+  --coffee-700: #4a3123;
+  --coffee-500: #7b5334;
+  --coffee-300: #b08c67;
+  --coffee-100: #f1e7dc;
   --ink: #26303f;
   --muted: #6d7788;
   --line: #e3e6ec;
@@ -363,6 +369,72 @@ table.grid {
   border-left-width: 5px;
 }
 .ce-span { color: var(--brass-600); }
+
+/* ---- Brewery vs Coffee ---------------------------------------------------
+   The two businesses share this calendar, so an entry must be attributable at
+   a glance and without relying on color alone: each carries a text tag, and
+   the card's tint + left edge reinforce it. */
+.cell-entry.ce-biz-coffee {
+  background: var(--coffee-100);
+  border-color: #e2d3c2;
+  border-left-color: var(--coffee-500);
+}
+.cell-entry.ce-biz-coffee .ce-time,
+.cell-entry.ce-biz-coffee .ce-span { color: var(--coffee-500); }
+.biz-tag {
+  display: inline-block;
+  vertical-align: 1px;
+  margin-right: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #fff;
+  white-space: nowrap;
+}
+.biz-brewery { background: var(--brass-600); }
+.biz-coffee { background: var(--coffee-500); }
+
+/* Business picker in the entry form */
+.biz-toggle { display: flex; gap: 8px; }
+.biz-opt {
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 700;
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.biz-opt:hover { border-color: #c9c4b8; }
+.biz-opt-brewery.is-on {
+  background: var(--brass-100);
+  border-color: var(--brass-600);
+  color: #7a5c1d;
+}
+.biz-opt-coffee.is-on {
+  background: var(--coffee-100);
+  border-color: var(--coffee-500);
+  color: var(--coffee-700);
+}
+
+/* Business chips in the filter bar */
+.chip-biz-brewery.chip-on {
+  background: var(--brass-600);
+  border-color: var(--brass-600);
+  color: #fff;
+}
+.chip-biz-coffee.chip-on {
+  background: var(--coffee-500);
+  border-color: var(--coffee-500);
+  color: #fff;
+}
 .ce-headline {
   display: -webkit-box;
   -webkit-line-clamp: 3;

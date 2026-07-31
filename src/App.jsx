@@ -58,6 +58,7 @@ export default function App() {
   const [managing, setManaging] = useState(false)
   const [editing, setEditing] = useState(null) // { category, week }
   const [ownerFilter, setOwnerFilter] = useState(null)
+  const [businessFilter, setBusinessFilter] = useState(null) // 'Brewery' | 'Coffee'
   const [from, setFrom] = useState(defaultFrom)
   const [to, setTo] = useState(defaultTo)
   const [selectMode, setSelectMode] = useState(false)
@@ -102,6 +103,11 @@ export default function App() {
     for (const e of allEntries) {
       const catId = resolveCategoryId(e.category, categories)
       if (!catId || !e.date) continue
+      // The Brewery/Coffee filter hides content entries only — "nothing this
+      // week" markers carry no business and stay, so the cell still reads as
+      // deliberately empty rather than unfilled.
+      if (businessFilter && !e.nothingThisWeek && e.business !== businessFilter)
+        continue
       for (const wk of entryWeekKeys(e)) {
         const k = `${catId}|${wk}`
         ;(map[k] || (map[k] = [])).push(e)
@@ -111,7 +117,7 @@ export default function App() {
       map[k].sort((a, b) => String(a.date).localeCompare(String(b.date)))
     }
     return map
-  }, [allEntries, categories])
+  }, [allEntries, categories, businessFilter])
 
   // Week columns are generated straight from the date filter, so the filter
   // sets the real range. Capped so an extreme range can't make a runaway table.
@@ -126,7 +132,8 @@ export default function App() {
     return list
   }, [from, to])
 
-  const isDefault = !ownerFilter && from === defaultFrom && to === defaultTo
+  const isDefault =
+    !ownerFilter && !businessFilter && from === defaultFrom && to === defaultTo
 
   // Owner names this person may edit: their own + anyone they supervise.
   // The server enforces this too; this just shapes the UI.
@@ -148,6 +155,7 @@ export default function App() {
 
   function resetFilters() {
     setOwnerFilter(null)
+    setBusinessFilter(null)
     setFrom(defaultFrom)
     setTo(defaultTo)
   }
@@ -190,7 +198,15 @@ export default function App() {
     return markers
   }
 
-  async function addEntry({ date, dateEnd, startTime, endTime, headline, details }) {
+  async function addEntry({
+    date,
+    dateEnd,
+    startTime,
+    endTime,
+    business,
+    headline,
+    details,
+  }) {
     const { category } = editing
     const entry = await apiSave({
       category: category.label,
@@ -199,6 +215,7 @@ export default function App() {
       dateEnd,
       startTime,
       endTime,
+      business,
       headline,
       details,
       nothingThisWeek: false,
@@ -216,7 +233,10 @@ export default function App() {
     for (const m of markers) apiClear(m.id)
   }
 
-  async function updateEntry(id, { date, dateEnd, startTime, endTime, headline, details }) {
+  async function updateEntry(
+    id,
+    { date, dateEnd, startTime, endTime, business, headline, details }
+  ) {
     const { category } = editing
     const entry = await apiSave({
       id,
@@ -226,6 +246,7 @@ export default function App() {
       dateEnd,
       startTime,
       endTime,
+      business,
       headline,
       details,
       nothingThisWeek: false,
@@ -347,6 +368,8 @@ export default function App() {
         owners={owners}
         ownerFilter={ownerFilter}
         setOwnerFilter={setOwnerFilter}
+        businessFilter={businessFilter}
+        setBusinessFilter={setBusinessFilter}
         from={from}
         to={to}
         setFrom={setFrom}
