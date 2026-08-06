@@ -5,9 +5,12 @@
 // bookings in the Brain (that job runs ~6am America/Chicago). Also hittable by
 // hand with the cron secret.
 //
-// SAFETY: writes require the CRON_SECRET. An unauthenticated caller gets a bare
-// {ok:false} and nothing runs — this endpoint creates and archives rows in a
-// database the whole team relies on, so it is never open.
+// WHO MAY CALL IT: the Vercel cron (Bearer CRON_SECRET), or a signed-in
+// calendar administrator from the Manage panel. Nobody else — this creates and
+// archives rows in a database the whole team relies on, so it is never open.
+// The admin path exists because Vercel's manual "run this cron now" button is a
+// paid feature, and waiting a day to see what a mapping change does is how
+// mapping changes go unreviewed.
 //
 // WRITING IS OPT-IN. Set TRIPLESEAT_SYNC_LIVE=1 in the Vercel environment to
 // let it write; without that it reports and does nothing, every time. ?dry=1
@@ -18,6 +21,7 @@
 // Private Events row is visible before it lands on the real calendar.
 
 import { syncTripleSeat } from '../lib/tripleseatSync.js'
+import { requireAdmin } from '../lib/auth.js'
 
 const MAIL_TO = (
   process.env.HEALTH_ALERT_TO ||
@@ -81,11 +85,21 @@ async function mailSummary(s) {
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET
   const auth = req.headers['authorization'] || ''
-  const trusted = !!secret && auth === `Bearer ${secret}`
+  const isCron = !!secret && auth === `Bearer ${secret}`
 
-  if (!trusted) {
-    res.status(401).json({ ok: false, error: 'This endpoint requires the cron secret.' })
-    return
+  // The same Authorization header carries either the cron secret or a Google
+  // sign-in token, so try the cron match first and fall through to the admin
+  // gate. A failed admin check is the caller's real error — surface its message
+  // rather than a generic 401, or "you're not an admin" reads as "server down".
+  if (!isCron) {
+    try {
+      await requireAdmin(req)
+    } catch (e) {
+      res
+        .status(e.status || 401)
+        .json({ ok: false, error: e.message || 'Not authorized to run this.' })
+      return
+    }
   }
 
   // FAIL SAFE: writing is opt-in. Without TRIPLESEAT_SYNC_LIVE=1 this only ever

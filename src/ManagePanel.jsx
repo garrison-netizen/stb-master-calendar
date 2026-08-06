@@ -44,6 +44,39 @@ export default function ManagePanel({ owners, categories, onClose }) {
   const [busy, setBusy] = useState(false)
   const [note, setNote] = useState(null) // { type: 'ok' | 'err', msg }
 
+  // Triple Seat feed — run on demand and see the result here. Vercel's own
+  // "run this cron now" is a paid feature, and a mapping change you cannot
+  // check until tomorrow is a mapping change nobody checks.
+  const [feedBusy, setFeedBusy] = useState(false)
+  const [feed, setFeed] = useState(null) // the run summary, or { error }
+
+  async function runTripleSeatSync() {
+    setFeedBusy(true)
+    setFeed(null)
+    try {
+      const r = await fetch('/api/sync-tripleseat', { headers: { ...authHeader() } })
+      // Anything that isn't JSON means we never reached the function itself —
+      // `npm run dev` serves the file verbatim, and an outage returns an HTML
+      // error page. Either way, don't show the user a parser error.
+      const body = await r.text()
+      let res
+      try {
+        res = JSON.parse(body)
+      } catch {
+        res = {
+          ok: false,
+          error: r.ok
+            ? 'This only works on the live site, not the local preview.'
+            : `The server returned an error (${r.status}).`,
+        }
+      }
+      setFeed(res)
+    } catch (e) {
+      setFeed({ ok: false, error: String(e && e.message ? e.message : e) })
+    }
+    setFeedBusy(false)
+  }
+
   const ownerByName = useMemo(() => {
     const m = {}
     for (const o of ownerList) m[o.name] = o
@@ -325,6 +358,67 @@ export default function ManagePanel({ owners, categories, onClose }) {
         )}
 
         <div className="manage-body">
+          {/* ---- Triple Seat feed ---- */}
+          <div className="manage-block">
+            <div className="manage-block-head">
+              <span className="manage-block-title">Triple Seat feed</span>
+              <button className="mbtn" onClick={runTripleSeatSync} disabled={feedBusy || busy}>
+                {feedBusy ? 'Running…' : 'Run now'}
+              </button>
+            </div>
+            <div className="mrow">
+              <span className="mrow-main">
+                <span className="mrow-meta">
+                  Booked private events come from Triple Seat automatically each
+                  morning. Run it here to see what it would change right now.
+                </span>
+              </span>
+            </div>
+            {feed && (
+              <div className="mrow">
+                <span className="mrow-main">
+                  {feed.error ? (
+                    <span className="mrow-name">Couldn’t run: {feed.error}</span>
+                  ) : (
+                    <>
+                      <span className="mrow-name">
+                        {feed.dryRun
+                          ? 'Preview only — nothing was changed'
+                          : 'Calendar updated'}
+                      </span>
+                      <span className="mrow-meta">
+                        {feed.created} added · {feed.updated} updated ·{' '}
+                        {feed.removed} removed (cancelled) · {feed.unchanged} unchanged
+                        {feed.adopted ? ` · ${feed.adopted} left alone (edited by hand)` : ''}
+                      </span>
+                      <span className="mrow-meta">
+                        {feed.bookingsConsidered} bookings considered
+                        {feed.skipped?.beforeCalendar
+                          ? ` · ${feed.skipped.beforeCalendar} skipped as older than the calendar`
+                          : ''}
+                        {feed.skipped?.notLive ? ` · ${feed.skipped.notLive} not confirmed` : ''}
+                      </span>
+                      {feed.categoryCounts && (
+                        <span className="mrow-meta">
+                          Rows:{' '}
+                          {Object.entries(feed.categoryCounts)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([k, v]) => `${k} ${v}`)
+                            .join(' · ')}
+                        </span>
+                      )}
+                      {feed.errors?.length > 0 && (
+                        <span className="mrow-name">
+                          {feed.errors.length} problem(s): {feed.errors.join('; ')}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+
           {/* ---- Owners ---- */}
           <div className="manage-block">
             <div className="manage-block-head">
