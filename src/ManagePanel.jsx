@@ -383,14 +383,25 @@ export default function ManagePanel({ owners, categories, onClose }) {
                     <>
                       <span className="mrow-name">
                         {feed.dryRun
-                          ? 'Preview only — nothing was changed'
+                          ? 'Preview only — the calendar has NOT been changed'
                           : 'Calendar updated'}
                       </span>
+                      {/* Past tense on a preview reads as "this already
+                          happened", and the first person to see it reasonably
+                          asked why the entries had not appeared. */}
                       <span className="mrow-meta">
-                        {feed.created} added · {feed.updated} updated ·{' '}
-                        {feed.removed} removed (cancelled) · {feed.unchanged} unchanged
+                        {feed.dryRun ? 'Would add' : 'Added'} {feed.created} ·{' '}
+                        {feed.dryRun ? 'would update' : 'updated'} {feed.updated} ·{' '}
+                        {feed.dryRun ? 'would remove' : 'removed'} {feed.removed} (cancelled) ·{' '}
+                        {feed.unchanged} already correct
                         {feed.adopted ? ` · ${feed.adopted} left alone (edited by hand)` : ''}
                       </span>
+                      {feed.dryRun && (
+                        <span className="mrow-meta">
+                          To make these real, add the setting TRIPLESEAT_SYNC_LIVE = 1
+                          in Vercel and redeploy.
+                        </span>
+                      )}
                       <span className="mrow-meta">
                         {feed.bookingsConsidered} bookings considered
                         {feed.skipped?.beforeCalendar
