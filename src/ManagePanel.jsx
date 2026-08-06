@@ -54,7 +54,7 @@ export default function ManagePanel({ owners, categories, onClose }) {
     setFeedBusy(true)
     setFeed(null)
     try {
-      const r = await fetch('/api/sync-tripleseat', { headers: { ...authHeader() } })
+      const r = await fetch('/api/sync-tripleseat?purge=1', { headers: { ...authHeader() } })
       // Anything that isn't JSON means we never reached the function itself —
       // `npm run dev` serves the file verbatim, and an outage returns an HTML
       // error page. Either way, don't show the user a parser error.
@@ -363,14 +363,15 @@ export default function ManagePanel({ owners, categories, onClose }) {
             <div className="manage-block-head">
               <span className="manage-block-title">Triple Seat feed</span>
               <button className="mbtn" onClick={runTripleSeatSync} disabled={feedBusy || busy}>
-                {feedBusy ? 'Running…' : 'Run now'}
+                {feedBusy ? 'Removing…' : 'Remove Triple Seat entries'}
               </button>
             </div>
             <div className="mrow">
               <span className="mrow-main">
                 <span className="mrow-meta">
-                  Booked private events come from Triple Seat automatically each
-                  morning. Run it here to see what it would change right now.
+                  The automatic feed is switched off. This removes the entries it
+                  already added. Nothing else on the calendar is touched, and the
+                  bookings themselves are unaffected.
                 </span>
               </span>
             </div>
@@ -379,6 +380,21 @@ export default function ManagePanel({ owners, categories, onClose }) {
                 <span className="mrow-main">
                   {feed.error ? (
                     <span className="mrow-name">Couldn’t run: {feed.error}</span>
+                  ) : feed.purged ? (
+                    <>
+                      <span className="mrow-name">
+                        Removed {feed.removed} Triple Seat entr
+                        {feed.removed === 1 ? 'y' : 'ies'} from the calendar
+                      </span>
+                      <span className="mrow-meta">
+                        Refresh the page to see the calendar without them.
+                      </span>
+                      {feed.errors?.length > 0 && (
+                        <span className="mrow-name">
+                          {feed.errors.length} problem(s): {feed.errors.join('; ')}
+                        </span>
+                      )}
+                    </>
                   ) : (
                     <>
                       <span className="mrow-name">

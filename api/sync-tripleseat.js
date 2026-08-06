@@ -20,8 +20,19 @@
 // per-category split, so a rule that silently dumps everything into the general
 // Private Events row is visible before it lands on the real calendar.
 
-import { syncTripleSeat } from '../lib/tripleseatSync.js'
+import { syncTripleSeat, purgeTripleSeat } from '../lib/tripleseatSync.js'
 import { requireAdmin } from '../lib/auth.js'
+
+// FEED HALTED 2026-08-06 at Garrison's request. The projection put 45 of 49
+// bookings in the generic "Private Events" row, which is a marketing-campaigns
+// row, not where events belong — the ADR-011 field mapping was wrong about
+// that, and settling the right destination was not worth his time today.
+//
+// The daily cron is removed from vercel.json, so nothing runs on its own. This
+// endpoint stays so the work is recoverable and so the entries can be taken
+// back off the calendar. To restart it later: fix the category mapping in
+// lib/tripleseatSync.js, set HALTED to false, restore the cron, and dry-run it.
+const HALTED = true
 
 const MAIL_TO = (
   process.env.HEALTH_ALERT_TO ||
@@ -109,6 +120,30 @@ export default async function handler(req, res) {
   // calendar unreviewed. The safe state is the default state.
   const liveEnabled = String(process.env.TRIPLESEAT_SYNC_LIVE || '').trim() === '1'
   const dryRun = !liveEnabled || (req.query || {}).dry === '1'
+
+  // Removal stays available while the feed is halted — that is the whole point
+  // of keeping this endpoint alive.
+  if ((req.query || {}).purge === '1') {
+    try {
+      const summary = await purgeTripleSeat({
+        token: process.env.NOTION_TOKEN,
+        entriesDbId: process.env.NOTION_DB_ID,
+      })
+      res.status(200).json({ ok: summary.errors.length === 0, purged: true, ...summary })
+    } catch (e) {
+      res.status(500).json({ ok: false, error: e.message })
+    }
+    return
+  }
+
+  if (HALTED) {
+    res.status(200).json({
+      ok: true,
+      halted: true,
+      error: 'The Triple Seat feed is switched off. Nothing was changed.',
+    })
+    return
+  }
 
   try {
     const summary = await syncTripleSeat(

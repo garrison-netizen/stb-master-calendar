@@ -20,11 +20,9 @@ const REQUIRED_VARS = [
   'NOTION_ALLOWED_DS',
   'VITE_GOOGLE_CLIENT_ID',
   'RESEND_API_KEY', // needed so this very alert can be delivered
-  // Brain Bookings DB — the source for the daily Triple Seat projection. If this
-  // goes blank or the integration loses access, booked private events quietly
-  // stop reaching the calendar, which looks like "a quiet month" rather than a
-  // broken feed. Checked here so it fails loud instead.
-  'NOTION_BOOKINGS_DB_ID',
+  // NOTION_BOOKINGS_DB_ID deliberately absent: the Triple Seat feed is halted
+  // (see api/sync-tripleseat.js), so alerting on a setting nothing reads would
+  // be noise. Put it back if the feed is ever restarted.
 ]
 
 const ALERT_TO = (
@@ -115,14 +113,6 @@ export default async function handler(req, res) {
     if (process.env.NOTION_CATEGORIES_DB_ID)
       probes.push(
         notionReadable('Categories DB', `https://api.notion.com/v1/databases/${process.env.NOTION_CATEGORIES_DB_ID}/query`, v22)
-      )
-    if (process.env.NOTION_BOOKINGS_DB_ID)
-      probes.push(
-        notionReadable(
-          'Brain Bookings DB (Triple Seat feed)',
-          `https://api.notion.com/v1/databases/${process.env.NOTION_BOOKINGS_DB_ID}/query`,
-          v22
-        )
       )
     for (const p of await Promise.all(probes)) if (p) problems.push(p)
   }
