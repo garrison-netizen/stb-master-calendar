@@ -17,6 +17,65 @@
 
 import { syncTripleSeat } from '../lib/tripleseatSync.js'
 
+const MAIL_TO = (
+  process.env.HEALTH_ALERT_TO ||
+  process.env.NUDGE_SUMMARY_TO ||
+  'garrison@spindletap.com'
+)
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean)
+const FROM = process.env.NUDGE_FROM || 'STB Calendar <onboarding@resend.dev>'
+
+// WHY EMAIL: this job runs unattended behind a secret, so without a report
+// nobody can see what it did — a feed that quietly stopped looks exactly like a
+// quiet month. Deliberately NOT a daily digest: it only writes when something
+// actually happened, or when it is a dry run being reviewed before go-live.
+function worthReporting(s) {
+  return s.dryRun || s.created > 0 || s.removed > 0 || s.errors.length > 0
+}
+
+async function mailSummary(s) {
+  const key = process.env.RESEND_API_KEY
+  if (!key) return false
+  const split = Object.entries(s.categoryCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, v]) => `<li>${k}: <strong>${v}</strong></li>`)
+    .join('')
+  const html =
+    (s.dryRun
+      ? `<p><strong>DRY RUN — nothing was written.</strong> This is what the Triple Seat feed would do to the calendar.</p>`
+      : `<p>The Triple Seat feed updated the Master Calendar.</p>`) +
+    `<ul>` +
+    `<li>Added: <strong>${s.created}</strong></li>` +
+    `<li>Updated: <strong>${s.updated}</strong></li>` +
+    `<li>Removed (cancelled upstream): <strong>${s.removed}</strong></li>` +
+    `<li>Unchanged: ${s.unchanged}</li>` +
+    `<li>Left alone (edited by a person): ${s.adopted}</li>` +
+    `</ul>` +
+    `<p>Bookings considered: ${s.bookingsConsidered}. Skipped — not confirmed: ${s.skipped.notLive}, no event date: ${s.skipped.noDate}.</p>` +
+    `<p>Which calendar row they landed in:</p><ul>${split}</ul>` +
+    (s.errors.length
+      ? `<p style="color:#a23a37"><strong>${s.errors.length} problem(s):</strong></p><ul>` +
+        s.errors.map((e) => `<li>${e}</li>`).join('') +
+        `</ul>`
+      : '') +
+    `<p style="color:#888;font-size:12px">Automated — Triple Seat → Master Calendar (ADR-011)</p>`
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: FROM,
+      to: MAIL_TO,
+      subject: s.dryRun
+        ? 'Triple Seat → Calendar: dry run, nothing written'
+        : `Triple Seat → Calendar: ${s.created} added, ${s.removed} removed`,
+      html,
+    }),
+  })
+  return resp.ok
+}
+
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET
   const auth = req.headers['authorization'] || ''
@@ -38,7 +97,20 @@ export default async function handler(req, res) {
       },
       { dryRun }
     )
-    res.status(200).json({ ok: summary.errors.length === 0, ranAt: new Date().toISOString(), ...summary })
+    let emailed = false
+    if (worthReporting(summary)) {
+      try {
+        emailed = await mailSummary(summary)
+      } catch {
+        // A failed report must never fail the sync that already succeeded.
+      }
+    }
+    res.status(200).json({
+      ok: summary.errors.length === 0,
+      ranAt: new Date().toISOString(),
+      emailed,
+      ...summary,
+    })
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message })
   }
