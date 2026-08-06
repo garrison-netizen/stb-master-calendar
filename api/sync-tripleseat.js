@@ -9,7 +9,9 @@
 // {ok:false} and nothing runs — this endpoint creates and archives rows in a
 // database the whole team relies on, so it is never open.
 //
-//   ?dry=1   report exactly what would change, write nothing.
+// WRITING IS OPT-IN. Set TRIPLESEAT_SYNC_LIVE=1 in the Vercel environment to
+// let it write; without that it reports and does nothing, every time. ?dry=1
+// forces report-only even when live is enabled.
 //
 // Always dry-run first after any change to the mapping: the summary shows the
 // per-category split, so a rule that silently dumps everything into the general
@@ -86,7 +88,13 @@ export default async function handler(req, res) {
     return
   }
 
-  const dryRun = (req.query || {}).dry === '1'
+  // FAIL SAFE: writing is opt-in. Without TRIPLESEAT_SYNC_LIVE=1 this only ever
+  // reports what it would do. Deliberately NOT keyed off a ?dry=1 query string
+  // alone — a cron path's query string is one config detail away from being
+  // dropped, and the failure mode of that mistake is writing to the live
+  // calendar unreviewed. The safe state is the default state.
+  const liveEnabled = String(process.env.TRIPLESEAT_SYNC_LIVE || '').trim() === '1'
+  const dryRun = !liveEnabled || (req.query || {}).dry === '1'
 
   try {
     const summary = await syncTripleSeat(
